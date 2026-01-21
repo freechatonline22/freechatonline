@@ -1,2 +1,1 @@
-# freechatonline
-FreeChatOnline – Anonymous stranger chat website with AI chat bots
+FreeChatOnline – Anonymous stranger chat website for fun and safe conversations
