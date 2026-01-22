@@ -1,122 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnonChat | Random Connect</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e5ddd5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #075e54; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        #status { font-size: 12px; background: #128c7e; padding: 4px 8px; border-radius: 10px; }
-        
-        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 14px; position: relative; }
-        .received { align-self: flex-start; background: white; }
-        .sent { align-self: flex-end; background: #dcf8c6; }
-        .system { align-self: center; background: #fff3cd; font-size: 11px; color: #856404; border-radius: 5px; }
-
-        .controls { background: #f0f0f0; padding: 10px; display: flex; gap: 8px; border-top: 1px solid #ddd; }
-        #input-area { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 25px; outline: none; }
-        .btn { border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-        .btn-send { background: #075e54; color: white; }
-        .btn-skip { background: #d32f2f; color: white; }
-        .btn-friend { background: #34b7f1; color: white; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnonChat | Real-time</title>
+<style>
+  body { font-family: sans-serif; background: #f0f2f5; margin:0; display:flex; flex-direction:column; height:100vh; }
+  header { background:#075e54; color:white; padding:15px; text-align:center; font-weight:bold; }
+  #chat-container { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; }
+  .message { max-width:80%; padding:10px; border-radius:10px; font-size:14px; word-wrap:break-word; }
+  .received { align-self:flex-start; background:white; }
+  .sent { align-self:flex-end; background:#dcf8c6; }
+  .user-id { font-size:10px; color:#888; display:block; }
+  #input-area { background:white; padding:10px; display:flex; gap:5px; border-top:1px solid #ddd; }
+  input { flex:1; padding:10px; border:1px solid #ccc; border-radius:20px; outline:none; }
+  button { background:#075e54; color:white; border:none; padding:10px 15px; border-radius:20px; cursor:pointer; }
+  #login-button { margin:10px; background:#34b7f1; }
+</style>
 </head>
 <body>
 
-<header>
-    <span>AnonChat Live</span>
-    <div id="status">Connecting...</div>
-</header>
+<header>AnonChat - Anonymous + Google Login</header>
 
-<div id="chat-container">
-    <div class="msg system">Searching for someone anonymous...</div>
-</div>
+<div id="chat-container"></div>
 
-<div class="controls">
-    <button class="btn btn-skip" onclick="skipUser()">Skip</button>
-    <input type="text" id="input-area" placeholder="Say 'Hi'...">
-    <button class="btn btn-send" onclick="sendMessage()">Send</button>
-</div>
+<form id="input-area">
+  <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" required>
+  <button type="submit">Send</button>
+</form>
 
-<div style="text-align: center; padding-bottom: 5px; background: #f0f0f0;">
-    <button class="btn btn-friend" onclick="addFriend()">+ Add Friend</button>
-</div>
+<button id="login-button">Login with Google</button>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, push, onChildAdded, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
-  // --- APNI DETAILS YAHAN DALEIN ---
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
+// 🔹 Your Firebase Config
+const firebaseConfig = {
+    apiKey: "AIzaSyCHKrZQV0RPSvGCJ5tKeWiloSdQlUgtSf8",
+    authDomain: "freechatonline-36529.firebaseapp.com",
+    databaseURL: "https://freechatonline-36529-default-rtdb.firebaseio.com",
+    projectId: "freechatonline-36529",
+    storageBucket: "freechatonline-36529.firebasestorage.app",
+    messagingSenderId: "570224046985",
+    appId: "1:570224046985:web:6555207c4e303ee049e758",
+    measurementId: "G-RQH157LX7C"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  
-  let myId = localStorage.getItem('anonId') || 'User-' + Math.floor(Math.random() * 9999);
-  localStorage.setItem('anonId', myId);
-  
-  let currentRoom = "global_lobby"; // Shuruat mein sab ek hi room mein honge
-  let chatRef = ref(db, 'chats/' + currentRoom);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const messagesRef = ref(db, 'messages');
 
-  // Status update
-  document.getElementById('status').innerText = "Online as " + myId;
+let userId = localStorage.getItem('anonUserId') || 'User-' + Math.floor(Math.random()*10000);
+localStorage.setItem('anonUserId', userId);
 
-  // Send Message
-  window.sendMessage = () => {
-    const text = document.getElementById('input-area').value;
-    if(text.trim() !== "") {
-        push(chatRef, { sender: myId, text: text });
-        document.getElementById('input-area').value = "";
-    }
-  };
+const chatContainer = document.getElementById('chat-container');
+const messageForm = document.getElementById('input-area');
+const messageInput = document.getElementById('messageInput');
+const loginButton = document.getElementById('login-button');
 
-  // Skip User (Change Room)
-  window.skipUser = () => {
-    const chatBox = document.getElementById('chat-container');
-    chatBox.innerHTML = '<div class="msg system">Skipped! Searching for someone new...</div>';
-    currentRoom = "room_" + Math.floor(Math.random() * 10); // Random room change
-    chatRef = ref(db, 'chats/' + currentRoom);
-    listenMessages();
-  };
-
-  // Add Friend Feature
-  window.addFriend = () => {
-    let isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (!isLoggedIn) {
-        let name = prompt("To add friends, please enter your name (Login):");
-        if(name) {
-            localStorage.setItem('chatName', name);
-            localStorage.setItem('isLoggedIn', 'true');
-            alert("Login Successful as " + name + "! Now you can send Friend Requests.");
-        }
-    } else {
-        alert("Friend Request Sent to Anonymous User!");
-    }
-  };
-
-  // Listen for Messages
-  function listenMessages() {
-    onChildAdded(chatRef, (data) => {
-        const msg = data.val();
-        const div = document.createElement('div');
-        div.className = `msg ${msg.sender === myId ? 'sent' : 'received'}`;
-        div.innerText = msg.text;
-        document.getElementById('chat-container').appendChild(div);
-        document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+// 🔹 Handle Google Login
+loginButton.addEventListener('click', () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider)
+    .then((result) => {
+        userId = result.user.displayName || result.user.email;
+        localStorage.setItem('anonUserId', userId);
+        alert('Logged in as '+userId);
+    }).catch((error) => {
+        console.error(error);
+        alert('Login failed');
     });
-  }
+});
 
-  listenMessages();
+// 🔹 Listen auth state
+onAuthStateChanged(auth, user => {
+    if(user){
+        userId = user.displayName || user.email;
+        localStorage.setItem('anonUserId', userId);
+    }
+});
+
+// 🔹 Send Message
+messageForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    if(text){
+        push(messagesRef, { userId, text, timestamp: serverTimestamp() });
+        messageInput.value = "";
+    }
+});
+
+// 🔹 Receive Messages
+onChildAdded(messagesRef, (data)=>{
+    const msg = data.val();
+    const div = document.createElement('div');
+    const isMe = msg.userId === userId;
+    div.className = `message ${isMe?'sent':'received'}`;
+    div.innerHTML = `<span class="user-id">${isMe?'You':msg.userId}</span>${msg.text}`;
+    chatContainer.appendChild(div);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+});
 </script>
 
 </body>
