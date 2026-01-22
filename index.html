@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Free Chat Online</title>
+<title>Free Chat Online - Advanced</title>
 <style>
 body{margin:0;font-family:sans-serif;background:#f0f2f5 url('https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg') no-repeat center center/cover;}
 header{background:rgba(7,94,84,0.9);color:#fff;padding:15px;text-align:center;font-weight:bold;font-size:18px;}
-#chat-container{height:70vh;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+#chat-container{height:60vh;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
 .msg{max-width:75%;padding:8px;border-radius:10px;font-size:14px;word-wrap:break-word;}
 .me{background:#dcf8c6;margin-left:auto;}
 .other{background:#fff;margin-right:auto;}
@@ -16,11 +16,22 @@ header{background:rgba(7,94,84,0.9);color:#fff;padding:15px;text-align:center;fo
 #input-area input{flex:1;padding:8px;border-radius:20px;border:1px solid #ccc;outline:none;}
 #input-area button{padding:8px 12px;background:#075e54;color:#fff;border:none;border-radius:20px;cursor:pointer;}
 #file-input{display:none;}
+#room-select{margin:10px;padding:6px;border-radius:10px;border:1px solid #ccc;outline:none;}
 </style>
 </head>
 <body>
 
-<header>Anonymous Chat</header>
+<header>Free Chat Online - Advanced</header>
+
+<select id="room-select">
+  <option value="enormous">Enormous Chat</option>
+  <option value="18plus">18+ Chat</option>
+  <option value="30plus">30+ Chat</option>
+  <option value="boys">Friend Boys</option>
+  <option value="girls">Friend Girls</option>
+  <option value="students">Student Chat</option>
+</select>
+
 <div id="chat-container"></div>
 
 <div id="input-area">
@@ -45,9 +56,7 @@ var firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 firebase.initializeApp(firebaseConfig);
-
 var db = firebase.database();
-var chatRef = db.ref("globalChat");
 
 var userId = localStorage.getItem('anonUserId') || 'Anon-' + Math.floor(Math.random()*10000);
 localStorage.setItem('anonUserId', userId);
@@ -55,12 +64,22 @@ localStorage.setItem('anonUserId', userId);
 const chatContainer = document.getElementById('chat-container');
 const inputField = document.getElementById('text');
 const fileInput = document.getElementById('file-input');
+const roomSelect = document.getElementById('room-select');
 
-// Send message
+var currentRoom = roomSelect.value;
+var chatRef = db.ref("rooms/"+currentRoom);
+
+// Change room
+roomSelect.addEventListener('change', ()=>{
+  currentRoom = roomSelect.value;
+  chatContainer.innerHTML="";
+  chatRef = db.ref("rooms/"+currentRoom);
+  listenMessages();
+});
+
 function send(){
   const text = inputField.value.trim();
   const file = fileInput.files[0];
-
   if(!text && !file) return;
 
   const msgData = {user:userId, time:Date.now()};
@@ -90,20 +109,18 @@ function pushMessage(data){
   chatRef.push(data);
 }
 
-// Listen messages
-chatRef.limitToLast(100).on("child_added",function(snap){
-  const m = snap.val();
-  const div = document.createElement('div');
-  div.className = "msg " + (m.user===userId?"me":"other");
-  let html = `<b>${m.user}</b><br>`;
-  if(m.text) html += m.text + "<br>";
-  if(m.img) html += `<img src="${m.img}" style="max-width:70%;border-radius:10px;"><br>`;
-  if(m.audio) html += `<audio controls src="${m.audio}"></audio><br>`;
-  html += `<div class="tick">${m.user===userId ? "✔✔" : ""}</div>`;
-  div.innerHTML = html;
-  chatContainer.appendChild(div);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-});
-</script>
-</body>
-</html>
+function listenMessages(){
+  chatRef.limitToLast(100).off();
+  chatRef.limitToLast(100).on("child_added",function(snap){
+    const m = snap.val();
+    const div = document.createElement('div');
+    div.className = "msg " + (m.user===userId?"me":"other");
+    let html = `<b>${m.user}</b><br>`;
+    if(m.text) html += m.text + "<br>";
+    if(m.img) html += `<img src="${m.img}" style="max-width:70%;border-radius:10px;"><br>`;
+    if(m.audio) html += `<audio controls src="${m.audio}"></audio><br>`;
+    html += `<div class="tick">${m.user===userId ? "✔✔" : ""}</div>`;
+    div.innerHTML = html;
+    chatContainer.appendChild(div);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  });
