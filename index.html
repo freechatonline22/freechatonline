@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Free Chat Online - Advanced</title>
+<title>Free Chat Online - Y99 Style</title>
 <style>
 body{margin:0;font-family:sans-serif;background:#f0f2f5 url('https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg') no-repeat center center/cover;}
 header{background:rgba(7,94,84,0.9);color:#fff;padding:15px;text-align:center;font-weight:bold;font-size:18px;}
@@ -21,7 +21,7 @@ header{background:rgba(7,94,84,0.9);color:#fff;padding:15px;text-align:center;fo
 </head>
 <body>
 
-<header>Free Chat Online - Advanced</header>
+<header>Free Chat Online - Y99 Style</header>
 
 <select id="room-select">
   <option value="enormous">Enormous Chat</option>
@@ -58,6 +58,7 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 
+// Anonymous user ID
 var userId = localStorage.getItem('anonUserId') || 'Anon-' + Math.floor(Math.random()*10000);
 localStorage.setItem('anonUserId', userId);
 
@@ -77,12 +78,13 @@ roomSelect.addEventListener('change', ()=>{
   listenMessages();
 });
 
+// Send message
 function send(){
   const text = inputField.value.trim();
   const file = fileInput.files[0];
   if(!text && !file) return;
 
-  const msgData = {user:userId, time:Date.now()};
+  const msgData = {user:userId, time:Date.now(), seen:false};
 
   if(text) msgData.text = text;
 
@@ -105,22 +107,42 @@ function send(){
   fileInput.value="";
 }
 
+// Push message to Firebase
 function pushMessage(data){
   chatRef.push(data);
+  // Auto-reply AI placeholder for demonstration
+  if(Math.random()<0.4){ // 40% chance AI replies
+    setTimeout(()=>{ 
+      const aiMsg = {
+        user:"AI-Bot",
+        text:"Hi! This is AI auto-reply 😊",
+        time:Date.now(),
+        seen:false
+      };
+      chatRef.push(aiMsg);
+    }, Math.random()*2000+1000); // random delay 1-3s
+  }
 }
 
+// Listen messages
 function listenMessages(){
   chatRef.limitToLast(100).off();
   chatRef.limitToLast(100).on("child_added",function(snap){
     const m = snap.val();
     const div = document.createElement('div');
-    div.className = "msg " + (m.user===userId?"me":"other");
+    div.className = "msg " + (m.user===userId?"me":(m.user.startsWith("AI")?"other":"other"));
     let html = `<b>${m.user}</b><br>`;
     if(m.text) html += m.text + "<br>";
     if(m.img) html += `<img src="${m.img}" style="max-width:70%;border-radius:10px;"><br>`;
     if(m.audio) html += `<audio controls src="${m.audio}"></audio><br>`;
-    html += `<div class="tick">${m.user===userId ? "✔✔" : ""}</div>`;
+    html += `<div class="tick">${m.user===userId ? (m.seen?"✔✔":"✔") : ""}</div>`;
     div.innerHTML = html;
     chatContainer.appendChild(div);
     chatContainer.scrollTop = chatContainer.scrollHeight;
   });
+}
+
+listenMessages();
+</script>
+</body>
+</html>
