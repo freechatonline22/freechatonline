@@ -1,98 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Free Chat Online | Anonymous</title>
+<title>Free Chat Online</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{margin:0;font-family:sans-serif;background:#f0f2f5}
-.screen{display:none;height:100vh}
-.active{display:flex;flex-direction:column}
-header{background:#075e54;color:#fff;padding:12px;text-align:center}
-#chat{flex:1;overflow-y:auto;padding:10px}
-.msg{max-width:80%;margin:6px;padding:8px;border-radius:8px;font-size:14px;position:relative}
+header{background:#075e54;color:#fff;padding:10px;text-align:center}
+#chat{height:80vh;overflow-y:auto;padding:10px}
+.msg{max-width:80%;margin:6px;padding:8px;border-radius:8px;font-size:14px}
 .me{background:#dcf8c6;margin-left:auto}
 .other{background:#fff}
-.tick{font-size:11px;color:#555;position:absolute;bottom:2px;right:6px}
-#input{display:flex;padding:8px;background:#fff;border-top:1px solid #ccc}
+.tick{font-size:11px;color:#555}
+#input{display:flex;padding:8px;background:#fff}
 #input input{flex:1;padding:8px;border-radius:20px;border:1px solid #ccc}
-#input button{margin-left:5px;border:none;background:#075e54;color:#fff;padding:8px 14px;border-radius:20px}
-.center{justify-content:center;align-items:center;text-align:center}
-button{cursor:pointer}
+#input button{margin-left:5px;background:#075e54;color:#fff;border:none;border-radius:20px;padding:8px 14px}
 </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
-<div id="login" class="screen active center">
-  <h2>Free Chat Online</h2>
-  <p>Talk to strangers anonymously</p>
-  <button onclick="startChat()">Start Anonymous Chat</button>
-</div>
-
-<!-- CHAT SCREEN -->
-<div id="chatScreen" class="screen">
 <header>Anonymous Chat</header>
 <div id="chat"></div>
+
 <div id="input">
-<input id="text" placeholder="Type a message...">
+<input id="text" placeholder="Type message...">
 <button onclick="send()">Send</button>
 </div>
-</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 
 <script>
-const login=document.getElementById("login");
-const chatScreen=document.getElementById("chatScreen");
-const chat=document.getElementById("chat");
-const input=document.getElementById("text");
+// 🔴 REPLACE WITH YOUR FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
 
-let aiNames=["Riya","Neha","Pooja","Anu"];
-let ai=aiNames[Math.floor(Math.random()*aiNames.length)];
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const chatRef = db.ref("globalChat");
 
-function startChat(){
- login.classList.remove("active");
- chatScreen.classList.add("active");
- systemMsg("You are now connected");
- setTimeout(aiReply,1500);
-}
+const chat = document.getElementById("chat");
+const input = document.getElementById("text");
 
-function systemMsg(text){
- let div=document.createElement("div");
- div.className="msg other";
- div.innerHTML="<b>System</b><br>"+text;
- chat.appendChild(div);
- chat.scrollTop=chat.scrollHeight;
-}
+const userId = "Anon-" + Math.floor(Math.random()*10000);
 
 function send(){
- if(!input.value.trim())return;
- let text=input.value;
+ if(!input.value.trim()) return;
+
+ const msgRef = chatRef.push();
+ msgRef.set({
+   user:userId,
+   text:input.value,
+   seen:false,
+   time:Date.now()
+ });
  input.value="";
-
- let div=document.createElement("div");
- div.className="msg me";
- div.innerHTML="<b>You</b><br>"+text+"<span class='tick'>✔</span>";
- chat.appendChild(div);
- chat.scrollTop=chat.scrollHeight;
-
- // seen simulation
- setTimeout(()=>{
-   div.querySelector(".tick").innerText="✔✔";
- },1500);
-
- setTimeout(aiReply,2000);
 }
 
-function aiReply(){
- let replies=[
-  "haan yaar 🙂",
-  "acha samjha",
-  "hmm theek hai",
-  "main yahin hoon",
-  "UP side se hoon, Ayodhya ke paas",
-  "Mumbai side se rehti hoon",
-  "bas casual hi baat kar rahi hoon 😄"
- ];
- let r=replies[Math.floor(Math.random()*replies.length)];
-
- let div
+chatRef.limitToLast(50).on("child_added",snap=>{
+ const m=snap.val();
+ const div=document.createElement("div");
+ div.className="msg "+(m.user===userId?"me":"other");
+ div.innerHTML=`<b>${m.user}</b><br>${m.text}
+ <div class="tick">${m.user===userId ? "✔✔" : ""}</div>`;
+ chat.appendChild(div);
+ chat.scrollTop=chat.scrollHeight;
+});
+</script>
+</body>
+</html>
