@@ -3,49 +3,130 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Free Chat Online - Y99 Style</title>
+<title>Free Chat Online</title>
+
 <style>
-body{margin:0;font-family:sans-serif;background:#f0f2f5 url('https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg') no-repeat center center/cover;}
-header{background:rgba(7,94,84,0.9);color:#fff;padding:15px;text-align:center;font-weight:bold;font-size:18px;}
-#chat-container{height:60vh;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
-.msg{max-width:75%;padding:8px;border-radius:10px;font-size:14px;word-wrap:break-word;}
-.me{background:#dcf8c6;margin-left:auto;}
-.other{background:#fff;margin-right:auto;}
-.tick{font-size:11px;color:#555;margin-top:2px;text-align:right;}
-#input-area{display:flex;gap:6px;padding:10px;background:rgba(255,255,255,0.9);}
-#input-area input{flex:1;padding:8px;border-radius:20px;border:1px solid #ccc;outline:none;}
-#input-area button{padding:8px 12px;background:#075e54;color:#fff;border:none;border-radius:20px;cursor:pointer;}
-#file-input{display:none;}
-#room-select{margin:10px;padding:6px;border-radius:10px;border:1px solid #ccc;outline:none;}
+body{margin:0;font-family:sans-serif;background:#f0f2f5}
+
+/* ---------- ENTRY PAGE ---------- */
+#entry{
+  height:100vh;
+  background:url("https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg") center/cover no-repeat;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:#fff;
+  text-align:center;
+}
+#entry h1{font-size:32px;margin-bottom:10px}
+#entry p{opacity:.9}
+#entry button{
+  margin-top:20px;
+  padding:12px 25px;
+  font-size:16px;
+  border:none;
+  border-radius:25px;
+  background:#25d366;
+  color:#fff;
+  cursor:pointer;
+}
+
+/* ---------- CHAT PAGE ---------- */
+#chatPage{display:none;height:100vh;flex-direction:column}
+
+header{
+  background:#075e54;
+  color:#fff;
+  padding:12px;
+  text-align:center;
+  font-weight:bold;
+}
+
+#groups{
+  padding:6px;
+  border:none;
+  outline:none;
+}
+
+#chat{
+  flex:1;
+  overflow-y:auto;
+  padding:10px;
+  background:#ece5dd;
+}
+
+.msg{
+  max-width:75%;
+  padding:8px;
+  margin:5px 0;
+  border-radius:8px;
+  font-size:14px;
+}
+.me{background:#dcf8c6;margin-left:auto}
+.other{background:#fff}
+
+#inputBox{
+  display:flex;
+  padding:8px;
+  background:#fff;
+}
+#inputBox input{
+  flex:1;
+  padding:8px;
+  border-radius:20px;
+  border:1px solid #ccc;
+}
+#inputBox button{
+  margin-left:5px;
+  padding:8px 14px;
+  border:none;
+  border-radius:20px;
+  background:#075e54;
+  color:#fff;
+}
 </style>
 </head>
+
 <body>
 
-<header>Free Chat Online - Y99 Style</header>
-
-<select id="room-select">
-  <option value="enormous">Enormous Chat</option>
-  <option value="18plus">18+ Chat</option>
-  <option value="30plus">30+ Chat</option>
-  <option value="boys">Friend Boys</option>
-  <option value="girls">Friend Girls</option>
-  <option value="students">Student Chat</option>
-</select>
-
-<div id="chat-container"></div>
-
-<div id="input-area">
-<input id="text" placeholder="Type a message...">
-<input type="file" id="file-input" accept="image/*,audio/*">
-<button onclick="send()">Send</button>
-<button onclick="document.getElementById('file-input').click()">📎</button>
+<!-- ENTRY -->
+<div id="entry">
+  <h1>Free Chat Online</h1>
+  <p>Talk with strangers anonymously</p>
+  <button onclick="startChat()">Start Anonymous Chat</button>
 </div>
 
+<!-- CHAT -->
+<div id="chatPage">
+  <header>
+    Anonymous Chat
+    <br>
+    <select id="groups">
+      <option value="online">🟢 Online Now</option>
+      <option value="enormous">Enormous Chat</option>
+      <option value="18plus">18+ Chat</option>
+      <option value="30plus">30+ Chat</option>
+      <option value="boys">Boys Chat</option>
+      <option value="girls">Girls Chat</option>
+      <option value="students">Student Chat</option>
+    </select>
+  </header>
+
+  <div id="chat"></div>
+
+  <div id="inputBox">
+    <input id="msg" placeholder="Type a message…">
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-// 🔴 Replace with your Firebase config
+// 🔴 REPLACE FIREBASE DETAILS
 var firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -58,91 +139,56 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 
-// Anonymous user ID
-var userId = localStorage.getItem('anonUserId') || 'Anon-' + Math.floor(Math.random()*10000);
-localStorage.setItem('anonUserId', userId);
+// USER
+var user = localStorage.getItem("anonUser") || "Anon-"+Math.floor(Math.random()*10000);
+localStorage.setItem("anonUser", user);
 
-const chatContainer = document.getElementById('chat-container');
-const inputField = document.getElementById('text');
-const fileInput = document.getElementById('file-input');
-const roomSelect = document.getElementById('room-select');
+// ONLINE STATUS
+var onlineRef = db.ref("online/"+user);
+onlineRef.set(true);
+window.onbeforeunload = ()=>onlineRef.remove();
 
-var currentRoom = roomSelect.value;
-var chatRef = db.ref("rooms/"+currentRoom);
+// UI
+var entry=document.getElementById("entry");
+var chatPage=document.getElementById("chatPage");
+var chat=document.getElementById("chat");
+var msg=document.getElementById("msg");
+var groupSelect=document.getElementById("groups");
 
-// Change room
-roomSelect.addEventListener('change', ()=>{
-  currentRoom = roomSelect.value;
-  chatContainer.innerHTML="";
-  chatRef = db.ref("rooms/"+currentRoom);
-  listenMessages();
-});
+var room="online";
+var ref=db.ref("rooms/"+room);
 
-// Send message
+function startChat(){
+  entry.style.display="none";
+  chatPage.style.display="flex";
+  listen();
+}
+
+groupSelect.onchange=function(){
+  room=this.value;
+  chat.innerHTML="";
+  ref=db.ref("rooms/"+room);
+  listen();
+};
+
 function send(){
-  const text = inputField.value.trim();
-  const file = fileInput.files[0];
-  if(!text && !file) return;
-
-  const msgData = {user:userId, time:Date.now(), seen:false};
-
-  if(text) msgData.text = text;
-
-  if(file){
-    const reader = new FileReader();
-    reader.onload = function(e){
-      if(file.type.startsWith('image')){
-        msgData.img = e.target.result;
-      } else if(file.type.startsWith('audio')){
-        msgData.audio = e.target.result;
-      }
-      pushMessage(msgData);
-    };
-    reader.readAsDataURL(file);
-  } else {
-    pushMessage(msgData);
-  }
-
-  inputField.value="";
-  fileInput.value="";
+  if(!msg.value.trim())return;
+  ref.push({user:user,text:msg.value,time:Date.now()});
+  msg.value="";
 }
 
-// Push message to Firebase
-function pushMessage(data){
-  chatRef.push(data);
-  // Auto-reply AI placeholder for demonstration
-  if(Math.random()<0.4){ // 40% chance AI replies
-    setTimeout(()=>{ 
-      const aiMsg = {
-        user:"AI-Bot",
-        text:"Hi! This is AI auto-reply 😊",
-        time:Date.now(),
-        seen:false
-      };
-      chatRef.push(aiMsg);
-    }, Math.random()*2000+1000); // random delay 1-3s
-  }
-}
-
-// Listen messages
-function listenMessages(){
-  chatRef.limitToLast(100).off();
-  chatRef.limitToLast(100).on("child_added",function(snap){
-    const m = snap.val();
-    const div = document.createElement('div');
-    div.className = "msg " + (m.user===userId?"me":(m.user.startsWith("AI")?"other":"other"));
-    let html = `<b>${m.user}</b><br>`;
-    if(m.text) html += m.text + "<br>";
-    if(m.img) html += `<img src="${m.img}" style="max-width:70%;border-radius:10px;"><br>`;
-    if(m.audio) html += `<audio controls src="${m.audio}"></audio><br>`;
-    html += `<div class="tick">${m.user===userId ? (m.seen?"✔✔":"✔") : ""}</div>`;
-    div.innerHTML = html;
-    chatContainer.appendChild(div);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+function listen(){
+  ref.off();
+  ref.limitToLast(100).on("child_added",snap=>{
+    var m=snap.val();
+    var d=document.createElement("div");
+    d.className="msg "+(m.user===user?"me":"other");
+    d.innerHTML="<b>"+m.user+"</b><br>"+m.text;
+    chat.appendChild(d);
+    chat.scrollTop=chat.scrollHeight;
   });
 }
-
-listenMessages();
 </script>
+
 </body>
 </html>
